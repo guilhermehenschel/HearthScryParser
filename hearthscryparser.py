@@ -108,7 +108,7 @@ def routine():
     parser.add_argument('input_file', help="JSON file of the HearthScry", type=str)
     parser.add_argument('--time-interval','-t',help="Probal Interval Between Plays in seconds", type=int , default=20 )
     parser.add_argument('--discrete-time','-b',help="Use turn number instead of time to verify sequence", type=bool, default=False)
-    parser.add_argument('--output-file','-o',help='Path for the output file (mode r)', type=str, default='output.txt')
+    parser.add_argument('--output-file','-o',help='Path for the output file (mode r)', type=str, default='output.csv')
     args = parser.parse_args()
 
     input_file_path = args.input_file
@@ -135,10 +135,10 @@ def routine():
                 csvwriter.writerow(line)
 
     with open("Atribute_log_"+output_file_path, mode='w',newline='\n') as csvfile:
-        csvwriter = csv.writer(csvfile)
-        csvwriter.writerow(['GameId', 'Region', 'Time', 'Mode', 'Rank', 'Class', 'OpponentClass','First', 'NTurns' 'Result'])
+        csvwriter = csv.writer(csvfile,quotechar='\'',quoting=csv.QUOTE_NONNUMERIC)
+        csvwriter.writerow(['GameId', 'Region', 'Time', 'Mode', 'Rank', 'Class', 'OpponentClass','First', 'NTurns', 'Result'])
         for game in result:
-            csvwriter.writerow([game.unique_id,game.region,game.s_time,game.mode,game.rank,game.pov_class,game.opponent_class,game.pov_is_first,game.max_turns(),game.result])
+            csvwriter.writerow([game.unique_id,game.region,game.s_time,game.mode,game.rank,game.pov_class,game.opponent_class,int(game.pov_is_first),game.max_turns(),game.result])
 
 
 
