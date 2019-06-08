@@ -137,7 +137,10 @@ class Parsed_Game:
         self.mode = self.game['mode']
         self.s_time = datetime.datetime.strptime(game['added'][:19], '%Y-%m-%dT%H:%M:%S')
         if self.mode == 'ranked':
-            self.rank = self.game['rank']
+            if not self.game['rank']:
+                self.rank = "0"
+            else:
+                self.rank = self.game['rank']
             self.game_quality = 'Constructed'
         elif self.mode == 'casual':
             self.rank = None
@@ -273,19 +276,6 @@ def routine():
     ifile.close()
 
     result = json_analyser(js_object, time_interval)
-
-    # with open("event_log_"+output_file_path,mode="w",newline='\n') as csvfile:
-    #     csvwriter = csv.writer(csvfile)
-    #     csvwriter.writerow(['GameId', 'Activity', 'Time', 'Extras'])
-    #     for game in result:
-    #         for line in game.event_log():
-    #             csvwriter.writerow(line)
-    #
-    # with open("Atribute_log_"+output_file_path, mode='w',newline='\n') as csvfile:
-    #     csvwriter = csv.writer(csvfile,quotechar='\'',quoting=csv.QUOTE_NONNUMERIC)
-    #     csvwriter.writerow(['GameId', 'Region', 'Time', 'Mode', 'Rank', 'Class', 'OpponentClass','First', 'NTurns', 'Result','Flanking Strike','CS2_146'])
-    #     for game in result:
-    #         csvwriter.writerow([game.unique_id,game.region,game.s_time,game.mode,game.rank,game.pov_class,game.opponent_class,int(game.pov_is_first),game.max_turns(),game.result,game.count_played_cards_with_name("Flanking Strike"),game.count_played_cards_with_id("CS2_146")])
 
     writer = Writer(result,sys.path[0].__str__()+"/ini",output_file_path)
     writer.write_logs()

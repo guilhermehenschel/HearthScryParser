@@ -6,9 +6,8 @@
   "game_mode" : ["ranked"],
   "attributes" : ["unique_id","region","start_time","mode","rank","pov_class","opponent_class","pov_is_first","max_turns","result"],
   "count_cards" : [
-    {"name" :  "Flanking Strike"},
-    {"id" :  "CFM_120"}
+    {"name" :  "Kobold Lackey"}
   ],
   "export_event_log" : "True",
-  "remove_tained" : "True"
+  "remove_tainted" : "True"
 }
