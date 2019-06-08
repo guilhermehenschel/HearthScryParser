@@ -4,6 +4,127 @@ import sys
 import datetime
 import csv
 
+class Card:
+    def __init__(self,name,id):
+        self.name = name
+        self.id = id
+
+    def compare_name(self,name):
+        return str(self.name).lower() == name.lower()
+
+    def compare_id(self,id):
+        return  str(id).lower() == str(id).lower()
+
+class Writer:
+    def __init__(self,parsed_games,init_file_path,output_file_path):
+        init_file = open(init_file_path)
+        init_json = json.load(init_file)
+        self.export_events = bool(init_json["export_event_log"])
+        if init_json["Classes_POV"] and init_json["Classes_POV"][0] != "*":
+            self.classes_pov = set(init_json["Classes_POV"])
+        else:
+            self.classes_pov = ["Hunter", "Rogue", "Mage", "Priest", "Paladin", "Warrior", "Shaman", "Warlock", "Druid"]
+
+        if init_json["excluded_class_POV"] and init_json["excluded_class_POV"][0] != "":
+            for pov_class in init_json["excluded_class_POV"]:
+                self.classes_pov.remove(pov_class)
+
+        if init_json["Classes_Opponent"] and init_json["Classes_Opponent"][0] != "*":
+            self.classes_opponent = set(init_json["Classes_POV"])
+        else:
+            self.classes_opponent = ["Hunter", "Rogue", "Mage", "Priest", "Paladin", "Warrior", "Shaman", "Warlock", "Druid"]
+
+        if init_json["excluded_class_Opponent"] and init_json["excluded_class_Opponent"][0] != "":
+            for pov_class in init_json["excluded_class_POV"]:
+                self.classes_opponent.remove(pov_class)
+
+        self.attributes = init_json["attributes"]
+
+        self.cards_to_count = init_json["count_cards"]
+
+        self.parsed_games = parsed_games
+
+        self.output_path = output_file_path
+
+        self.modes = init_json["game_mode"]
+
+        self.remove_tainted = bool(init_json["remove_tainted"])
+
+    def write_logs(self):
+        attribute_log = open(self.output_path+"_Attribute_log.csv", mode='w',newline='\n')
+        attribute_csvwriter = csv.writer(attribute_log,quotechar='\'',quoting=csv.QUOTE_NONNUMERIC)
+        event_log = ""  # Forward Declaration
+        event_csvwriter = ""  # Forward Declaration
+        if self.export_events:
+            event_log = open(self.output_path+"_Event_log.csv", mode='w',newline='\n')
+            event_csvwriter = csv.writer(event_log)
+            event_csvwriter.writerow(['GameId', 'Activity', 'Time', 'Extras'])
+
+        attribute_list = self.attributes
+        for card in self.cards_to_count:
+            if "name" in card:
+                attribute_list.append(str("Count_")+card["name"])
+            elif "id" in card:
+                attribute_list.append(str("Count_")+card["id"])
+
+        attribute_csvwriter.writerow(attribute_list)
+
+        for parsed_game in self.parsed_games:
+            if parsed_game.pov_class not in self.classes_pov:
+                continue
+
+            if parsed_game.opponent_class not in self.classes_opponent:
+                continue
+
+            if parsed_game.is_tainted() and self.remove_tainted:
+                continue
+
+            if parsed_game.mode not in self.modes:
+                continue
+
+            if self.export_events:
+                for line in parsed_game.event_log():
+                    event_csvwriter.writerow(line)
+
+            export_line = []
+
+            for att in self.attributes:
+                if att == "unique_id":
+                    export_line.append(parsed_game.unique_id)
+                elif att == "region":
+                    export_line.append(parsed_game.region)
+                elif att == "start_time" or att == "s_time" or att == "time":
+                    export_line.append(parsed_game.s_time)
+                elif att == "mode":
+                    export_line.append(parsed_game.mode)
+                elif att == "rank":
+                    export_line.append(parsed_game.rank)
+                elif att == "pov_class":
+                    export_line.append(parsed_game.pov_class)
+                elif att == "opponent_class":
+                    export_line.append(parsed_game.opponent_class)
+                elif att == "pov_is_first":
+                    export_line.append(int(parsed_game.pov_is_first))
+                elif att == "max_turns":
+                    export_line.append(parsed_game.max_turns())
+                elif att == "result":
+                    export_line.append(parsed_game.result)
+
+            for card in self.cards_to_count:
+                if "name" in card:
+                    export_line.append(parsed_game.count_played_cards_with_name(card["name"]))
+                elif "id" in card:
+                    export_line.append(parsed_game.count_played_cards_with_id(card["id"]))
+                else:
+                    export_line.append("ERROR")
+
+            attribute_csvwriter.writerow(export_line)
+
+        attribute_log.close()
+        if self.export_events:
+            event_log.close()
+
+
 class Parsed_Game:
 
     def __init__(self,game,interval_time=20):
@@ -35,6 +156,8 @@ class Parsed_Game:
         self.card_history = game['card_history']
 
         self.parsed_card_history = []
+
+        self.played_cards = []
 
     def is_tainted(self):
         return (self.game_quality=='Tainted')
@@ -72,8 +195,32 @@ class Parsed_Game:
             card = card_played["card"]["id"]
             card_name = card_played["card"]["name"]
             card_mana = card_played["card"]["mana"]
+            card_id = card_played["card"]["id"]
+            self.played_cards.append(Card(card_name,card_id))
             action = self.current_player.__str__()+" - "+card_name.__str__()
             self.parsed_card_history.append((action, current_time.__str__(), turn, card, card_name, card_mana))
+
+    def count_played_cards_with_name(self,card_name):
+        if not self.played_cards:
+            self.parse_cards_played()
+
+        count = 0
+        for card in self.played_cards:
+            if card.compare_name(card_name):
+                count+=1
+
+        return count
+
+    def count_played_cards_with_id(self, card_id):
+        if not self.played_cards:
+            self.parse_cards_played()
+
+        count = 0
+        for card in self.played_cards:
+            if card.compare_name(card_id):
+                count += 1
+
+        return count
 
     def event_log(self,discrete_time=False):
         ret = []
@@ -108,7 +255,7 @@ def routine():
     parser.add_argument('input_file', help="JSON file of the HearthScry", type=str)
     parser.add_argument('--time-interval','-t',help="Probal Interval Between Plays in seconds", type=int , default=20 )
     parser.add_argument('--discrete-time','-b',help="Use turn number instead of time to verify sequence", type=bool, default=False)
-    parser.add_argument('--output-file','-o',help='Path for the output file (mode r)', type=str, default='output.csv')
+    parser.add_argument('--output-file','-o',help='Path for the output file (mode r)', type=str, default='output')
     args = parser.parse_args()
 
     input_file_path = args.input_file
@@ -127,19 +274,21 @@ def routine():
 
     result = json_analyser(js_object, time_interval)
 
-    with open("event_log_"+output_file_path,mode="w",newline='\n') as csvfile:
-        csvwriter = csv.writer(csvfile)
-        csvwriter.writerow(['GameId', 'Activity', 'Time', 'Extras'])
-        for game in result:
-            for line in game.event_log():
-                csvwriter.writerow(line)
+    # with open("event_log_"+output_file_path,mode="w",newline='\n') as csvfile:
+    #     csvwriter = csv.writer(csvfile)
+    #     csvwriter.writerow(['GameId', 'Activity', 'Time', 'Extras'])
+    #     for game in result:
+    #         for line in game.event_log():
+    #             csvwriter.writerow(line)
+    #
+    # with open("Atribute_log_"+output_file_path, mode='w',newline='\n') as csvfile:
+    #     csvwriter = csv.writer(csvfile,quotechar='\'',quoting=csv.QUOTE_NONNUMERIC)
+    #     csvwriter.writerow(['GameId', 'Region', 'Time', 'Mode', 'Rank', 'Class', 'OpponentClass','First', 'NTurns', 'Result','Flanking Strike','CS2_146'])
+    #     for game in result:
+    #         csvwriter.writerow([game.unique_id,game.region,game.s_time,game.mode,game.rank,game.pov_class,game.opponent_class,int(game.pov_is_first),game.max_turns(),game.result,game.count_played_cards_with_name("Flanking Strike"),game.count_played_cards_with_id("CS2_146")])
 
-    with open("Atribute_log_"+output_file_path, mode='w',newline='\n') as csvfile:
-        csvwriter = csv.writer(csvfile,quotechar='\'',quoting=csv.QUOTE_NONNUMERIC)
-        csvwriter.writerow(['GameId', 'Region', 'Time', 'Mode', 'Rank', 'Class', 'OpponentClass','First', 'NTurns', 'Result'])
-        for game in result:
-            csvwriter.writerow([game.unique_id,game.region,game.s_time,game.mode,game.rank,game.pov_class,game.opponent_class,int(game.pov_is_first),game.max_turns(),game.result])
-
+    writer = Writer(result,sys.path[0].__str__()+"/ini",output_file_path)
+    writer.write_logs()
 
 
 if __name__ == '__main__':

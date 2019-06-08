@@ -1,0 +1,14 @@
+{
+  "Classes_POV" : ["*"],
+  "Classes_Opponent" : ["*"],
+  "excluded_class_POV" : ["Warlock"],
+  "excluded_class_Opponent" : ["Mage"],
+  "game_mode" : ["ranked"],
+  "attributes" : ["unique_id","region","start_time","mode","rank","pov_class","opponent_class","pov_is_first","max_turns","result"],
+  "count_cards" : [
+    {"name" :  "Flanking Strike"},
+    {"id" :  "CFM_120"}
+  ],
+  "export_event_log" : "True",
+  "remove_tained" : "True"
+}
