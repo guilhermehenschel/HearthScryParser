@@ -1,12 +1,16 @@
 {
-  "Classes_POV" : ["*"],
-  "Classes_Opponent" : ["*"],
-  "excluded_class_POV" : ["Warlock"],
-  "excluded_class_Opponent" : ["Mage"],
+  "Classes_POV" : ["Hunter"],
+  "Classes_Opponent" : ["Rogue"],
+  "excluded_class_POV" : [""],
+  "excluded_class_Opponent" : [""],
   "game_mode" : ["ranked"],
   "attributes" : ["unique_id","region","start_time","mode","rank","pov_class","opponent_class","pov_is_first","max_turns","result"],
   "count_cards" : [
-    {"name" :  "Kobold Lackey"}
+    {"name" :  "Kobold Lackey"},
+    {"name" :  "Preparation"},
+    {"name" :  "Pogo Hopper"},
+    {"name" :  "Shadowstep"},
+    {"name" :  "Zilliax"}
   ],
   "export_event_log" : "True",
   "remove_tainted" : "True"

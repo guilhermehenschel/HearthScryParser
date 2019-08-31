@@ -1,13 +1,16 @@
+import sys
 from os import listdir
 from parsed_game import *
 import json
 import plotly.plotly as plt
 import plotly.graph_objs as go
 from plotly.offline import download_plotlyjs, init_notebook_mode, plot
+import numpy as np
 
 HEROES = ["Druid","Hunter","Mage","Paladin","Priest","Rogue","Shaman","Warlock","Warrior"]
 HERO_POWERS = ["Life Tap", "Armor Up!", "Steady Shot", "Fireblast", "Dagger Mastery", "Totemic Call", "Lesser Heal", "Shapeshift", "Reinforce", "The Coin"]
 HERO_COLOR = ['#FF7D0A','#ABD473','#69CCF0','#F58CBA','#555555','#FFF569','#0070DE','#9482C9','#661D1A']
+HERO_COLOR_2 = ['#CF4D00','#7B9443','#399C40','#C54C8A','#252525','#CFC539','#0040BE','#645299','#360000']
 
 DIR_PATH = "Data/"
 
@@ -23,8 +26,7 @@ def json_analyser(js_object,interval_time = 20):
 
     return ps_games
 
-if __name__ == '__main__':
-
+def html_parser(ranked_only=False,start_range=None,end_range=None):
     games = []
     lt = listdir("Data/")
 
@@ -41,6 +43,12 @@ if __name__ == '__main__':
     games_per_day = dict()
     heroe_games_win_day = dict()
     for game in games:
+        if ranked_only and game.mode != "ranked":
+            continue
+        if start_range and game.s_time < datetime.datetime.fromisoformat(start_range):
+            continue
+        if end_range and game.s_time > datetime.datetime.fromisoformat(end_range):
+            continue
         date = game.s_time.date()
         set_of_cards = game.cards_used()
         if date in diferrent_cards_per_day:
@@ -100,6 +108,7 @@ if __name__ == '__main__':
         list_days.append(key)
         list_count.append(len(values))
 
+
     trace1 = go.Bar(
         x = list_days,
         y = list_count,
@@ -118,12 +127,12 @@ if __name__ == '__main__':
     most_played_cards = sorted(most_played_cards, key=lambda x: x[1], reverse=True)
 
     dataMostPlayedCards = []
-    for most_played_cards in most_played_cards[0:10]:
+    for most_played_card in most_played_cards[0:10]:
         uses_per_day = []
         uses_per_day_perct = []
         for day in list_days:
-            if (day, most_played_cards[0]) in counting_cards_per_day:
-                uses_per_day.append(counting_cards_per_day[(day, most_played_cards[0])])
+            if (day, most_played_card[0]) in counting_cards_per_day:
+                uses_per_day.append(counting_cards_per_day[(day, most_played_card[0])])
                 uses_per_day_perct.append(uses_per_day[-1]/games_per_day[day])
             else:
                 uses_per_day.append(0)
@@ -132,7 +141,7 @@ if __name__ == '__main__':
         dummy_trace = go.Scatter(
             x=list_days,
             y=uses_per_day_perct,
-            name=most_played_cards[0].name,
+            name=most_played_card[0].name,
             showlegend=True
         )
         dataMostPlayedCards.append(dummy_trace)
@@ -144,6 +153,7 @@ if __name__ == '__main__':
     dataPlayedHero = []
     dataWinHero = []
     dataPlayedHero_Pie = []
+    list_played_game = [ [] for i in HEROES]
 
     for hero in HEROES:
         wins_per = []
@@ -158,7 +168,7 @@ if __name__ == '__main__':
             else:
                 wins_per.append(0)
                 games_played_day.append(0)
-
+        list_played_game[index_of_hero] = games_played_day
 
         dummy_trace_win = go.Scatter(
             x = list_days,
@@ -168,7 +178,8 @@ if __name__ == '__main__':
             showlegend = True,
             yaxis='y2',
             line = dict(
-                color = HERO_COLOR[index_of_hero]
+                color = HERO_COLOR_2[index_of_hero],
+                dash='dot'
             )
         )
 
@@ -199,6 +210,8 @@ if __name__ == '__main__':
 
     dataPlayedHero_Pie = [trace_Pie]
     # Classes End
+
+
 
     layoutPie = {
         "title": "Played Classes",
@@ -244,7 +257,79 @@ if __name__ == '__main__':
             ),
             type='date'
         ),
-        legend = {"traceorder": "reversed"}
+        legend = {"traceorder": "reversed"},
+    shapes = [{
+        "type": "rect",
+        "xref": 'x',
+        "yref": 'paper',
+        'x0': list_days[0],
+        'x1': '2019-04-04',
+        'y0': 0,
+        'y1': 1,
+        'fillcolor': '#d32020',
+        'opacity': 0.2,
+        'line': {
+            'width': 0
+        }
+    },
+        {
+            "type": "rect",
+            "xref": 'x',
+            "yref": 'paper',
+            'x0': '2019-04-04',
+            'x1': list_days[-1],
+            'y0': 0,
+            'y1': 1,
+            'fillcolor': '#2020d3',
+            'opacity': 0.2,
+            'line': {
+                'width': 0
+            }
+        },
+        {
+            "type": "line",
+            "xref": "x",
+            "yref": "paper",
+            'x0': '2019-05-19',
+            'x1': '2019-05-19',
+            'y0': 0,
+            'y1': 1,
+            'opacity': 0.2,
+            'line': {
+                'color': '#000000',
+                'width': 3
+            }
+        },
+        {
+            "type": "line",
+            "xref": "x",
+            "yref": "paper",
+            'x0': '2019-05-22',
+            'x1': '2019-05-22',
+            'y0': 0,
+            'y1': 1,
+            'opacity': 0.5,
+            'line': {
+                'color': '#000000',
+                'width': 3
+            }
+        },
+        {
+            "type": "line",
+            "xref": "x",
+            "yref": "paper",
+            'x0': '2019-05-03',
+            'x1': '2019-05-03',
+            'y0': 0,
+            'y1': 1,
+            'opacity': 0.2,
+            'line': {
+                'color': '#000000',
+                'width': 3
+            }
+        }
+
+    ]
     )
 
     layoutHeroeWin = dict(
@@ -284,7 +369,79 @@ if __name__ == '__main__':
             ),
             type='date'
         ),
-        legend={"traceorder": "reversed"}
+        legend={"traceorder": "reversed"},
+        shapes=[{
+            "type":"rect",
+            "xref":'x',
+            "yref":'paper',
+            'x0':list_days[0],
+            'x1':'2019-04-04',
+            'y0':0,
+            'y1':1,
+            'fillcolor':'#d32020',
+            'opacity':0.2,
+            'line':{
+                'width':0
+            }
+            },
+            {
+                "type": "rect",
+                "xref": 'x',
+                "yref": 'paper',
+                'x0': '2019-04-04',
+                'x1': list_days[-1],
+                'y0': 0,
+                'y1': 1,
+                'fillcolor': '#2020d3',
+                'opacity': 0.2,
+                'line': {
+                    'width': 0
+                }
+            },
+            {
+                "type":"line",
+                "xref":"x",
+                "yref":"paper",
+                'x0':'2019-05-19',
+                'x1':'2019-05-19',
+                'y0':0,
+                'y1':1,
+                'opacity':0.2,
+                'line': {
+                    'color':'#000000',
+                    'width':3
+                }
+            },
+            {
+                "type": "line",
+                "xref": "x",
+                "yref": "paper",
+                'x0': '2019-05-22',
+                'x1': '2019-05-22',
+                'y0': 0,
+                'y1': 1,
+                'opacity': 0.5,
+                'line': {
+                    'color': '#000000',
+                    'width': 3
+                }
+            },
+            {
+                "type": "line",
+                "xref": "x",
+                "yref": "paper",
+                'x0': '2019-05-03',
+                'x1': '2019-05-03',
+                'y0': 0,
+                'y1': 1,
+                'opacity': 0.2,
+                'line': {
+                    'color': '#000000',
+                    'width': 3
+                }
+            }
+
+        ]
     )
 
 
@@ -319,6 +476,26 @@ if __name__ == '__main__':
                  output_type='div'
                  )
 
+    writer = Writer(games, sys.path[0].__str__() + "/ini", "html_parsed")
+    files = writer.write_logs()
+
+    string = ''
+    for output in files:
+        string += '''<a href="'''+output+'''" > ''' + output + '''</a>\n<br/>'''
+
+    total_played_cards = 0
+    for (card, value) in most_played_cards:
+        total_played_cards+=value
+
+    mn_unique_cards_played = np.mean(list_count)
+    std_unique_cards_played = np.std(list_count)
+
+    mn_rogue = np.mean(list_played_game[HEROES.index("Rogue")])
+    std_rogue = np.std(list_played_game[HEROES.index("Rogue")])
+
+    mn_wrr = np.mean(list_played_game[HEROES.index("Warrior")])
+    std_wrr = np.std(list_played_game[HEROES.index("Warrior")])
+
     html_string = '''
     <html>
         <head>
@@ -327,15 +504,41 @@ if __name__ == '__main__':
           <style>body{ margin:0 100; background:whitesmoke; }</style>
         </head>
         <body>
-          <h1>Unique Cards Played</h1>
+        <h1>Summary</h1>
+          <ol>
+            <li><a href="#UNIQUE-CARDS" >Unique Cards</a></li>
+            <li><a href="#MOST-PLAYED-CARDS" >Most Played Cards</a></li>
+            <li><a href="#HERO-STATISTICS">Hero Statistics</a></li>
+            <li><a href="#CSV-FILES">CSV Files</a></li>
+          </ol>
+          <br />
+          <h1>Resume</h1>
+          <p>Games Analized:'''+ str(len(games)) + '''</p>
+          <p>Cards Played: ''' + str(total_played_cards) + '''</p>
+          <p>Mean Unique cards: ''' + str(mn_unique_cards_played) + ''' +- '''+ str(std_unique_cards_played) + ''' </p>
+          <p>Mean Rogue games: ''' + str(mn_rogue) + ''' +- '''+ str(std_rogue) + ''' </p>
+          <p>Mean warrior games: ''' + str(mn_wrr) + ''' +- '''+ str(std_wrr) + ''' </p>
+          <br />
+          
+          <h1 id="UNIQUE-CARDS">Unique Cards Played</h1>
           ''' + aPlot + '''
-          <h1>Mean number of times card played per Game (Top 10)</h1>
+          <h1 id="MOST-PLAYED-CARDS">Mean number of times card played per Game (Top 10)</h1>
           ''' + bPlot + '''
-          <h1>Hero Statistics</h1>
+          <h1 id="HERO-STATISTICS">Hero Statistics</h1>
           ''' + cPlot + '''
           ''' + dPlot + '''
+          <h1 id="CSV-FILES">CSV Files</h1>
+          <div>
+          <div style="position: relative; width: 100%; height: 100%; background= white">
+          ''' + string + '''
+          </div>
+          </div>
         </body>
     </html>'''
 
     with open("report.html", 'w') as f:
         f.write(html_string)
+
+
+if __name__ == '__main__':
+    html_parser(ranked_only=True)

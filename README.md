@@ -39,3 +39,11 @@ Reading ini file:
   "remove_tainted" : "True" # Some games are considered Tainted and you might want to remove them from your list
   
 }
+
+
+To use Html Report
+
+python html_report_writer.py
+
+
+The software will read the itens on the Data/ folder

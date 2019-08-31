@@ -37,7 +37,7 @@ class Writer:
                 self.classes_pov.remove(pov_class)
 
         if init_json["Classes_Opponent"] and init_json["Classes_Opponent"][0] != "*":
-            self.classes_opponent = set(init_json["Classes_POV"])
+            self.classes_opponent = set(init_json["Classes_Opponent"])
         else:
             self.classes_opponent = ["Hunter", "Rogue", "Mage", "Priest", "Paladin", "Warrior", "Shaman", "Warlock", "Druid"]
 
@@ -58,7 +58,9 @@ class Writer:
         self.remove_tainted = bool(init_json["remove_tainted"])
 
     def write_logs(self):
+        files_path = []
         attribute_log = open(self.output_path+"_Attribute_log.csv", mode='w',newline='\n')
+        files_path.append(self.output_path+"_Attribute_log.csv")
         attribute_csvwriter = csv.writer(attribute_log,quotechar='\'',quoting=csv.QUOTE_NONNUMERIC)
         event_log = ""  # Forward Declaration
         event_csvwriter = ""  # Forward Declaration
@@ -66,6 +68,7 @@ class Writer:
             event_log = open(self.output_path+"_Event_log.csv", mode='w',newline='\n')
             event_csvwriter = csv.writer(event_log)
             event_csvwriter.writerow(['GameId', 'Activity', 'Time', 'Extras'])
+            files_path.append(self.output_path + "_Event_log.csv")
 
         attribute_list = self.attributes
         for card in self.cards_to_count:
@@ -130,6 +133,8 @@ class Writer:
         attribute_log.close()
         if self.export_events:
             event_log.close()
+
+        return files_path
 
 
 class ParsedGame:
